@@ -1,24 +1,37 @@
-const axios = require('axios');
-const TelegramBot = require('node-telegram-bot-api');
+// index.js
+import axios from 'axios';
+import TelegramBot from 'node-telegram-bot-api';
 
 const TELEGRAM_TOKEN = '7880585497:AAGlD5lHgBwM6pqNaY7uoMt0UQE6Kp3CfAc';
 const CHAT_ID = '7180557399';
+const API_KEY = 'kv4s3SmPOifDNnHpMPjQlppQ4ebsSIFmeKh39AzrHHmgx6Cmy9bBWm77w7s0YFLlW0gWBA7iYsDGF50osEWtA';
+
 const bot = new TelegramBot(TELEGRAM_TOKEN);
-
-const API_KEY = 'kv4s3SmPOifDNnHpMPjQlppQ4ebsSIFmeKh39AzrHHmgx6Cmy9bBWm77w7s0YFLlW0gWBA7iYsDGF50osEWtA'; // 👈 BingX API Key
-
 const PRICE_HISTORY = {};
 const RANK_HISTORY = [];
+const NOTIFIED = new Set();
 const CHECK_INTERVAL = 5000;
 
 const CONTRACTS_URL = 'https://open-api.bingx.com/openApi/swap/v2/quote/contracts';
 const PRICE_URL = 'https://open-api.bingx.com/openApi/swap/v2/quote/price';
 
-async function fetchContracts() {
-  const res = await axios.get(CONTRACTS_URL, {
-    headers: { 'X-BX-APIKEY': API_KEY }
-  });
-  return res.data?.data || [];
+async function fetchContractsWithRetry(retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await axios.get(CONTRACTS_URL, {
+        headers: { 'X-BX-APIKEY': API_KEY }
+      });
+      return res.data?.data || [];
+    } catch (err) {
+      if (err.response?.status === 429 && i < retries - 1) {
+        console.warn('⏳ 429 Too Many Requests, retrying...');
+        await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+  return [];
 }
 
 async function fetchPrice(symbol) {
@@ -53,7 +66,7 @@ function calcRankChange(prevList, currList) {
 }
 
 async function run() {
-  const contracts = await fetchContracts();
+  const contracts = await fetchContractsWithRetry();
 
   const tickers = [];
   for (const c of contracts) {
@@ -75,7 +88,9 @@ async function run() {
   RANK_HISTORY.push(...result);
 
   for (const t of ranked) {
-    if (t.change >= 0.001) {
+    const key = `${t.symbol}-${Math.floor(Date.now() / 60000)}`;
+    if (t.change >= 0.5 && !NOTIFIED.has(key)) {
+      NOTIFIED.add(key);
       const msg = `⚡ ${t.symbol}\n價格：${t.price.toFixed(6)}\n漲幅：${t.change.toFixed(2)}%\n排名變化：${t.rankChange > 0 ? '↑' : (t.rankChange < 0 ? '↓' : '→')} ${Math.abs(t.rankChange)}`;
       await bot.sendMessage(CHAT_ID, msg);
     }
@@ -85,7 +100,7 @@ async function run() {
 async function bootstrap() {
   await bot.sendMessage(CHAT_ID, '🟢 EnigmaticSloth Bot 上線成功！開始監控幣種價格變化，每 5 秒刷新一次 🚀');
 
-  const contracts = await fetchContracts();
+  const contracts = await fetchContractsWithRetry();
   const top = [];
 
   for (const c of contracts) {
