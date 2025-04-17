@@ -1,11 +1,12 @@
-import axios from 'axios';
-import TelegramBot from 'node-telegram-bot-api';
+const axios = require('axios');
+const TelegramBot = require('node-telegram-bot-api');
 
 const TELEGRAM_TOKEN = '7880585497:AAGlD5lHgBwM6pqNaY7uoMt0UQE6Kp3CfAc';
 const CHAT_ID = '7180557399';
-const API_KEY = 'kv4s3SmPOifDNnHpMPjQlppQ4ebsSIFmeKh39AzrHHmgx6Cmy9bBWm77w7s0YFLlW0gWBA7iYsDGF50osEWtA'; // 👈 請在這裡填上你的 BingX API Key
-
 const bot = new TelegramBot(TELEGRAM_TOKEN);
+
+const API_KEY = 'kv4s3SmPOifDNnHpMPjQlppQ4ebsSIFmeKh39AzrHHmgx6Cmy9bBWm77w7s0YFLlW0gWBA7iYsDGF50osEWtA'; // 👈 BingX API Key
+
 const PRICE_HISTORY = {};
 const RANK_HISTORY = [];
 const CHECK_INTERVAL = 5000;
@@ -13,18 +14,18 @@ const CHECK_INTERVAL = 5000;
 const CONTRACTS_URL = 'https://open-api.bingx.com/openApi/swap/v2/quote/contracts';
 const PRICE_URL = 'https://open-api.bingx.com/openApi/swap/v2/quote/price';
 
-const HEADERS = {
-  'X-BX-APIKEY': API_KEY,
-};
-
 async function fetchContracts() {
-  const res = await axios.get(CONTRACTS_URL, { headers: HEADERS });
+  const res = await axios.get(CONTRACTS_URL, {
+    headers: { 'X-BX-APIKEY': API_KEY }
+  });
   return res.data?.data || [];
 }
 
 async function fetchPrice(symbol) {
   try {
-    const res = await axios.get(`${PRICE_URL}?symbol=${symbol}`, { headers: HEADERS });
+    const res = await axios.get(`${PRICE_URL}?symbol=${symbol}`, {
+      headers: { 'X-BX-APIKEY': API_KEY }
+    });
     return parseFloat(res.data?.data?.price || 'NaN');
   } catch {
     return NaN;
@@ -34,7 +35,7 @@ async function fetchPrice(symbol) {
 function updatePriceHistory(symbol, price) {
   if (!PRICE_HISTORY[symbol]) PRICE_HISTORY[symbol] = [];
   PRICE_HISTORY[symbol].push({ time: Date.now(), price });
-  PRICE_HISTORY[symbol] = PRICE_HISTORY[symbol].filter(p => Date.now() - p.time <= 60000);
+  PRICE_HISTORY[symbol] = PRICE_HISTORY[symbol].filter(p => Date.now() - p.time <= 60_000);
 }
 
 function getPrice1MinAgo(symbol) {
