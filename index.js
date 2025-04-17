@@ -23,24 +23,23 @@ async function fetchAndCheck() {
       const now = Date.now();
       lastPrices[symbol].push({ time: now, price });
 
-      // 保留最近 60 秒內資料
+      // 保留最近 60 秒資料
       lastPrices[symbol] = lastPrices[symbol].filter(p => now - p.time <= 60 * 1000);
 
-      if (lastPrices[symbol].length < 2) continue; // 沒有舊資料就跳過
+      if (lastPrices[symbol].length > 1) {
+        const old = lastPrices[symbol][0].price;
+        const pct = ((price - old) / old) * 100;
 
-      const old = lastPrices[symbol][0].price;
-      const pct = ((price - old) / old) * 100;
+        console.log(`${symbol}: ${pct.toFixed(4)}%`);
 
-      // Log: 漲跌幅即時顯示
-      console.log(`[${symbol}] ${pct.toFixed(2)}% in 1 min`);
-
-      // 通知條件：上漲 0.01% 以上
-      if (pct >= 0.01) {
-        await bot.sendMessage(
-          CHAT_ID,
-          `⚡️ ${symbol} +${pct.toFixed(2)}% in 1 min\nCurrent: ${price}`
-        );
-        lastPrices[symbol] = []; // 清空避免連發
+        // 通知門檻：0.001%
+        if (pct >= 0.001) {
+          await bot.sendMessage(
+            CHAT_ID,
+            `⚡️ ${symbol} moved +${pct.toFixed(4)}% in 1 min\nCurrent: ${price}`
+          );
+          lastPrices[symbol] = [];
+        }
       }
     }
   } catch (err) {
