@@ -2,6 +2,7 @@
   "name": "bingx-alert-bot",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",  // 👈 加上這行
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
