@@ -46,11 +46,11 @@ async function fetchAllPrices(retries = 3) {
   }
 }
 
-// 取得最近 120 根 1 分鐘 K 線
+// 取得最近 60 根 1 分鐘 K 線
 async function fetchKlines(symbol, retries = 2) {
   try {
     const res = await axios.get(KLINES_URL, {
-      params: { symbol, interval: '1m', limit: 120 },
+      params: { symbol, interval: '1m', limit: 60 },
       headers: { 'X-BX-APIKEY': API_KEY }
     });
     return res.data?.data || [];
