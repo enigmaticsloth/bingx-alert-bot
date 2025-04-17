@@ -26,6 +26,12 @@ async function fetchAndCheck() {
       const symbol = t.symbol;
       const price = parseFloat(t.lastPrice);
 
+      // 跳過 NaN 價格
+      if (!symbol || isNaN(price)) {
+        console.log(`⚠️ 略過 ${symbol}：無效價格 (${t.lastPrice})`);
+        continue;
+      }
+
       if (!lastPrices[symbol]) {
         lastPrices[symbol] = [];
       }
@@ -38,25 +44,18 @@ async function fetchAndCheck() {
       const old = lastPrices[symbol][0].price;
       const pct = ((price - old) / old) * 100;
 
-      // log 給你看
       console.log(`🪙 ${symbol}: ${pct.toFixed(4)}%`);
 
-      // 改這裡：強制發送一次每個幣（測試用）
-      await bot.sendMessage(
-        CHAT_ID,
-        `🧪 TEST: ${symbol} moved ${pct.toFixed(4)}% in 1 min\nCurrent: ${price}`
-      );
-
-      // 若真的想要加條件式再開這段
-      /*
+      // 測試階段：漲跌超過 0.001% 就通知
       if (Math.abs(pct) >= 0.001) {
         await bot.sendMessage(
           CHAT_ID,
           `⚡️ ${symbol} moved ${pct.toFixed(4)}% in 1 min\nCurrent: ${price}`
         );
-        lastPrices[symbol] = []; // 避免重複通知
+
+        // 避免一直通知
+        lastPrices[symbol] = [];
       }
-      */
     }
   } catch (err) {
     console.error("❌ 錯誤：", err.message);
