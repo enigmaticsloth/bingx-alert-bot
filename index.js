@@ -34,8 +34,8 @@ async function fetchAndCheck() {
       // Log: 漲跌幅即時顯示
       console.log(`[${symbol}] ${pct.toFixed(2)}% in 1 min`);
 
-      // 通知條件：上漲 0.5% 以上
-      if (pct >= 0.5) {
+      // 通知條件：上漲 0.1% 以上
+      if (pct >= 0.1) {
         await bot.sendMessage(
           CHAT_ID,
           `⚡️ ${symbol} +${pct.toFixed(2)}% in 1 min\nCurrent: ${price}`
